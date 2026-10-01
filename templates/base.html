@@ -47,6 +47,71 @@
 
         h1, h2, h3, h4, h5, h6, .navbar-brand { font-family: 'Poppins', sans-serif; }
 
+        /* Install Banner */
+        .install-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 15px 20px;
+            z-index: 10000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+        
+        .install-banner.show {
+            display: block;
+        }
+        
+        .install-banner-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+        
+        .install-banner-text {
+            flex: 1;
+        }
+        
+        .install-banner h5 {
+            margin: 0 0 5px 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .install-banner p {
+            margin: 0;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        
+        .install-banner .btn-close {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            opacity: 0.8;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .install-banner .btn-close:hover {
+            opacity: 1;
+        }
+
         .top-header {
             background: var(--surface);
             padding: 15px 20px;
@@ -123,25 +188,23 @@
             width: auto;
             object-fit: contain;
         }
-        
-        /* Install Button */
-        #install-btn {
-            display: none;
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1001;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
-        }
     </style>
 </head>
 <body>
 
-    <!-- Install Prompt Button -->
-    <button id="install-btn" class="btn btn-primary rounded-pill px-4 py-2 fw-bold">
-        <i class="bi bi-download me-2"></i> Install NexaMart App
-    </button>
+    <!-- Install Banner -->
+    <div class="install-banner" id="installBanner">
+        <div class="install-banner-content">
+            <div class="install-banner-text">
+                <h5><i class="bi bi-download me-2"></i>Install NexaMart App</h5>
+                <p>Get the best shopping experience on your phone!</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-light btn-sm rounded-pill px-3" onclick="closeBanner()">Later</button>
+                <button class="btn btn-success btn-sm rounded-pill px-3" onclick="installApp()">Install</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Top Header -->
     <div class="top-header">
@@ -225,26 +288,62 @@
             });
         }
 
-        // PWA Install Prompt Logic
+        // PWA Install Banner Logic
         let deferredPrompt;
-        const installBtn = document.getElementById('install-btn');
+        const installBanner = document.getElementById('installBanner');
+
+        // Check if user has already dismissed the banner
+        const hasDismissedBanner = localStorage.getItem('nexamart_banner_dismissed');
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            installBtn.style.display = 'block';
-        });
-
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    installBtn.style.display = 'none';
-                }
-                deferredPrompt = null;
+            // Show banner if not dismissed
+            if (!hasDismissedBanner) {
+                setTimeout(() => {
+                    installBanner.classList.add('show');
+                }, 2000); // Show after 2 seconds
             }
         });
+
+        // Also show on page load for iOS (which doesn't fire beforeinstallprompt)
+        window.addEventListener('load', () => {
+            if (!hasDismissedBanner && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                setTimeout(() => {
+                    installBanner.classList.add('show');
+                }, 2000);
+            }
+        });
+
+        function closeBanner() {
+            installBanner.classList.remove('show');
+            localStorage.setItem('nexamart_banner_dismissed', 'true');
+        }
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        closeBanner();
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                // For iOS, show instructions
+                alert('To install NexaMart:\n\n1. Tap the Share button in Safari\n2. Select "Add to Home Screen"\n3. Tap "Add"');
+                closeBanner();
+            }
+        }
+
+        // Reset banner after 7 days
+        if (hasDismissedBanner) {
+            const dismissTime = localStorage.getItem('nexamart_banner_dismiss_time');
+            if (dismissTime && (Date.now() - parseInt(dismissTime)) > (7 * 24 * 60 * 60 * 1000)) {
+                localStorage.removeItem('nexamart_banner_dismissed');
+                localStorage.removeItem('nexamart_banner_dismiss_time');
+            }
+        }
     </script>
     {% block scripts %}
     {% endblock %}
