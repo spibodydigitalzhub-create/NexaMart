@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NexaMart</title>
     <meta name="theme-color" content="#4f46e5">
-    <link rel="manifest" href="/static/manifest.json">
+    <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/jpeg" href="https://i.imgur.com/pPQgPzH.jpeg">
     <link rel="apple-touch-icon" href="https://i.imgur.com/pPQgPzH.jpeg">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
@@ -17,13 +17,12 @@
         body { background-color: var(--bg-color); font-family: 'Inter', sans-serif; color: var(--text-main); padding-bottom: 100px; }
         h1, h2, h3, h4, h5, h6, .navbar-brand { font-family: 'Poppins', sans-serif; }
 
-        /* Bulletproof Install Banner */
         .install-banner {
             position: fixed; top: 0; left: 0; right: 0;
             background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
             color: white; padding: 15px 20px; z-index: 99999;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            display: flex; justify-content: space-between; align-items: center;
+            display: none; justify-content: space-between; align-items: center;
             animation: slideDown 0.5s ease-out;
         }
         @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
@@ -50,19 +49,17 @@
 </head>
 <body>
 
-    <!-- Forced Install Banner -->
-    <div class="install-banner" id="installBanner" style="display: none;">
+    <div class="install-banner" id="installBanner">
         <div class="banner-text">
             <h6><i class="bi bi-phone-fill me-2"></i>Download NexaMart App</h6>
             <p>Install for the best experience!</p>
         </div>
         <div class="banner-btns">
             <button class="btn-close-banner" onclick="hideBanner()">✕</button>
-            <button class="btn-install" onclick="triggerInstall()">Install</button>
+            <button class="btn-install" id="installBtn" onclick="triggerInstall()">Install</button>
         </div>
     </div>
 
-    <!-- Top Header -->
     <div class="top-header">
         <a href="/" class="brand-logo"><img src="https://i.imgur.com/pPQgPzH.jpeg" alt="NexaMart"><span>NexaMart</span></a>
         <div class="d-flex gap-3">
@@ -114,30 +111,72 @@
         }
         updateCartBadge();
 
-        // PWA Logic
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/static/service-worker.js'); }
-
-        // BANNER LOGIC: Show banner if user hasn't closed it in this session
+        // PWA Install Logic
+        let deferredPrompt = null;
         const banner = document.getElementById('installBanner');
-        if (!sessionStorage.getItem('banner_closed')) {
-            setTimeout(() => { banner.style.display = 'flex'; }, 1500); // Shows after 1.5 seconds
-        }
+        const installBtn = document.getElementById('installBtn');
+
+        // Capture the install prompt event IMMEDIATELY
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            deferredPrompt = e;
+            console.log('Install prompt captured!');
+            
+            // Show banner
+            setTimeout(() => {
+                banner.style.display = 'flex';
+            }, 1500);
+        });
+
+        // Also try to show banner on load for testing
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                banner.style.display = 'flex';
+            }, 2000);
+        });
 
         function hideBanner() {
             banner.style.display = 'none';
-            sessionStorage.setItem('banner_closed', 'true'); // Won't show again until browser is closed and reopened
         }
 
         function triggerInstall() {
             if (deferredPrompt) {
+                // This triggers the NATIVE browser install dialog
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then(() => { hideBanner(); deferredPrompt = null; });
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted install');
+                        hideBanner();
+                    } else {
+                        console.log('User dismissed install');
+                    }
+                    deferredPrompt = null;
+                });
             } else {
-                alert('To install: Tap the Share/Menu button in your browser and select "Add to Home Screen" or "Install App".');
+                // Fallback: Try Chrome's install API
+                if (window.installPrompt) {
+                    window.installPrompt();
+                } else {
+                    // Last resort: guide user
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                    if (isIOS) {
+                        alert('To install NexaMart:\n\n1. Tap the Share button (square with arrow)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add"');
+                    } else {
+                        alert('To install NexaMart:\n\n1. Tap the menu button (⋮) in your browser\n2. Tap "Install app" or "Add to Home screen"\n3. Tap "Install"');
+                    }
+                }
                 hideBanner();
             }
+        }
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW failed:', err));
+            });
         }
     </script>
     {% block scripts %}{% endblock %}

@@ -28,3 +28,53 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+from django.views.generic import TemplateView
+from django.http import JsonResponse
+
+def manifest_view(request):
+    manifest = {
+        "name": "NexaMart Ghana",
+        "short_name": "NexaMart",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#f9fafb",
+        "theme_color": "#4f46e5",
+        "orientation": "portrait",
+        "icons": [
+            {
+                "src": "https://i.imgur.com/pPQgPzH.jpeg",
+                "sizes": "192x192",
+                "type": "image/jpeg",
+                "purpose": "any maskable"
+            },
+            {
+                "src": "https://i.imgur.com/pPQgPzH.jpeg",
+                "sizes": "512x512",
+                "type": "image/jpeg",
+                "purpose": "any maskable"
+            }
+        ]
+    }
+    return JsonResponse(manifest)
+
+def service_worker_view(request):
+    sw_content = """
+    const CACHE_NAME = 'nexamart-v1';
+    self.addEventListener('install', event => {
+        self.skipWaiting();
+    });
+    self.addEventListener('activate', event => {
+        event.waitUntil(clients.claim());
+    });
+    self.addEventListener('fetch', event => {
+        event.respondWith(fetch(event.request));
+    });
+    """
+    from django.http import HttpResponse
+    return HttpResponse(sw_content, content_type='application/javascript')
+
+urlpatterns += [
+    path('manifest.json', manifest_view),
+    path('service-worker.js', service_worker_view),
+]
