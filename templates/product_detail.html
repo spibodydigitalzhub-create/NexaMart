@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block content %}
+<div id="product-container" class="mt-3">
+    <div class="text-center mt-5"><div class="spinner-border text-primary"></div></div>
+</div>
+
+<!-- Sticky Bottom Action Bar -->
+<div id="sticky-action-bar" class="position-fixed bottom-0 start-0 w-100 p-3 bg-white shadow-lg d-none" style="z-index: 1000; border-top-left-radius: 20px; border-top-right-radius: 20px;">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-0" id="sticky-price">₦0</h5>
+            <small class="text-muted" id="sticky-vendor">Vendor</small>
+        </div>
+        <button class="btn btn-primary btn-lg px-4 fw-bold" onclick="addToCart(currentProduct.id, currentProduct.name, currentProduct.price, currentProduct.image)">
+            <i class="bi bi-cart-plus"></i> Add to Cart
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const productId = {{ product_id }};
+    let currentProduct = null;
+
+    fetch(`/api/products/${productId}/`)
+        .then(res => res.json())
+        .then(product => {
+            currentProduct = product;
+            const container = document.getElementById('product-container');
+            const imageUrl = product.image || 'https://via.placeholder.com/400x400?text=NexaMart';
+            const formattedPrice = parseFloat(product.price).toLocaleString();
+            
+            let stars = '';
+            const fullStars = Math.floor(product.average_rating || 0);
+            for(let i=0; i<5; i++) stars += i < fullStars ? '<i class="bi bi-star-fill text-warning"></i>' : '<i class="bi bi-star text-muted"></i>';
+
+            container.innerHTML = `
+                <div class="modern-card">
+                    <img src="${imageUrl}" class="w-100" style="height: 350px; object-fit: cover; border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h3 class="fw-bold mb-0" style="font-size: 1.5rem;">${product.name}</h3>
+                        </div>
+                        <div class="mb-3">${stars} <span class="text-muted small ms-1">(${product.review_count || 0} reviews)</span></div>
+                        
+                        <div class="d-flex align-items-center mb-4 p-3 bg-light rounded-4">
+                            <i class="bi bi-shop text-primary fs-4 me-3"></i>
+                            <div>
+                                <small class="text-muted d-block" style="font-size: 0.75rem;">Sold by</small>
+                                <a href="/store/1/" class="text-decoration-none fw-bold text-dark">${product.vendor_name}</a>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold mb-2">Description</h6>
+                        <p class="text-muted mb-4" style="line-height: 1.6;">${product.description}</p>
+                    </div>
+                </div>
+
+                <!-- Reviews Section -->
+                <div class="modern-card mt-4 p-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-star-fill text-warning"></i> Customer Reviews</h5>
+                    <div id="reviews-list" class="mb-4">Loading reviews...</div>
+                    
+                    <hr class="my-4">
+                    <h6 class="fw-bold mb-3">Write a Review</h6>
+                    <select class="form-select mb-3" id="review-rating">
+                        <option value="5">⭐⭐⭐⭐⭐ (5 Stars)</option>
+                        <option value="4">⭐⭐⭐⭐ (4 Stars)</option>
+                        <option value="3">⭐⭐⭐ (3 Stars)</option>
+                        <option value="2">⭐⭐ (2 Stars)</option>
+                        <option value="1">⭐ (1 Star)</option>
+                    </select>
+                    <textarea class="form-control mb-3" id="review-comment" rows="2" placeholder="Share your thoughts..."></textarea>
+                    <button class="btn btn-primary w-100 py-2 fw-bold" onclick="submitReview()">Submit Review</button>
+                </div>
+            `;
+            
+            // Update sticky bar
+            document.getElementById('sticky-price').innerText = '₦' + formattedPrice;
+            document.getElementById('sticky-vendor').innerText = product.vendor_name;
+            document.getElementById('sticky-action-bar').classList.remove('d-none');
+            
+            loadReviews();
+        })
+        .catch(err => { document.getElementById('product-container').innerHTML = '<p class="text-danger text-center">Product not found.</p>'; });
+
+    function loadReviews() {
+        fetch(`/api/products/${productId}/reviews/`)
+            .then(res => res.json())
+            .then(reviews => {
+                const container = document.getElementById('reviews-list');
+                if (reviews.length === 0) { container.innerHTML = '<p class="text-muted text-center">No reviews yet.</p>'; return; }
+                let html = '';
+                reviews.forEach(r => {
+                    let rStars = '';
+                    for(let i=0; i<5; i++) rStars += i < r.rating ? '<i class="bi bi-star-fill text-warning"></i>' : '<i class="bi bi-star text-muted"></i>';
+                    html += `
+                        <div class="border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <strong class="fw-semibold">${r.user_name}</strong>
+                                <small class="text-muted">${r.created_at.split('T')[0]}</small>
+                            </div>
+                            <div class="mb-1">${rStars}</div>
+                            <p class="mb-0 small text-muted">${r.comment}</p>
+                        </div>`;
+                });
+                container.innerHTML = html;
+            });
+    }
+
+    function submitReview() {
+        const rating = document.getElementById('review-rating').value;
+        const comment = document.getElementById('review-comment').value;
+        fetch(`/api/products/${productId}/add-review/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ rating: rating, comment: comment })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.id) { alert('Review submitted!'); location.reload(); } 
+            else { alert(data.error || 'Failed. Are you logged in?'); }
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function addToCart(id, name, price, image) {
+        let cart = JSON.parse(localStorage.getItem('nexamart_cart') || '[]');
+        let existing = cart.find(item => item.id === id);
+        if (existing) { existing.quantity += 1; } 
+        else { cart.push({ id: id, name: name, price: price, image: image, quantity: 1 }); }
+        localStorage.setItem('nexamart_cart', JSON.stringify(cart));
+        updateCartBadge();
+        alert('Added to cart!');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="/" class="btn btn-sm btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+    <div>
+        <h3 class="mb-0" id="store-name">Store</h3>
+        <small class="text-muted">Official Storefront</small>
+    </div>
+</div>
+
+<div class="row" id="product-list">
+    <div class="text-center mt-5"><div class="spinner-border text-primary"></div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const vendorId = {{ vendor_id }};
+
+    fetch(`/api/vendor/storefront/${vendorId}/`)
+        .then(res => res.json())
+        .then(products => {
+            const container = document.getElementById('product-list');
+            container.innerHTML = '';
+            
+            if (products.length > 0) {
+                document.getElementById('store-name').innerText = products[0].vendor_name + "'s Store";
+            } else {
+                container.innerHTML = '<p class="text-center">This store has no products yet.</p>';
+            }
+
+            products.forEach(product => {
+                const formattedPrice = parseFloat(product.price).toLocaleString();
+                const imageUrl = product.image ? product.image : 'https://via.placeholder.com/300x200?text=NexaMart';
+                const html = `
+                    <div class="col-6 col-md-4 mb-3">
+                        <div class="card product-card h-100" onclick="window.location.href='/product/${product.id}/'" style="cursor: pointer;">
+                            <img src="${imageUrl}" class="card-img-top" style="height: 150px; object-fit: cover;">
+                            <div class="card-body p-2">
+                                <h6 class="card-title text-truncate">${product.name}</h6>
+                                <span class="price-tag">₦${formattedPrice}</span>
+                                <button class="btn btn-primary btn-sm w-100 mt-2" onclick="event.stopPropagation(); goToCheckout(${product.id})">Buy</button>
+                            </div>
+                        </div>
+                    </div>`;
+                container.innerHTML += html;
+            });
+        });
+
+    function goToCheckout(id) { window.location.href = '/checkout/?product_id=' + id; }
+</script>
+{% endblock %}

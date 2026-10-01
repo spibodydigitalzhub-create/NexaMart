@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="/" class="btn btn-light rounded-circle me-3 p-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h3 class="fw-bold mb-0">My Orders</h3>
+</div>
+
+<div id="orders-list">
+    <div class="text-center mt-5"><div class="spinner-border text-primary"></div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    fetch('/api/my-orders/')
+        .then(res => res.json())
+        .then(orders => {
+            const container = document.getElementById('orders-list');
+            container.innerHTML = '';
+            
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center mt-5">
+                        <i class="bi bi-receipt text-muted" style="font-size: 4rem;"></i>
+                        <p class="text-muted mt-3">You haven't placed any orders yet.</p>
+                        <a href="/" class="btn btn-primary mt-2">Start Shopping</a>
+                    </div>`;
+                return;
+            }
+
+            orders.forEach(order => {
+                // Determine badge color based on status
+                let badgeClass = 'bg-secondary bg-opacity-10 text-secondary';
+                if (order.status === 'paid') badgeClass = 'bg-success bg-opacity-10 text-success';
+                if (order.status === 'shipped') badgeClass = 'bg-primary bg-opacity-10 text-primary';
+                if (order.status === 'delivered') badgeClass = 'bg-dark bg-opacity-10 text-dark';
+
+                let itemsHtml = order.items.map(i => `
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-box-seam text-muted me-2"></i>
+                            <span class="small fw-medium">${i.quantity}x ${i.product}</span>
+                        </div>
+                        <span class="small fw-bold">₦${parseFloat(i.price).toLocaleString()}</span>
+                    </div>
+                `).join('');
+
+                const html = `
+                    <div class="modern-card p-4 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold mb-0">Order #${order.order_id}</h6>
+                                <small class="text-muted">${order.date}</small>
+                            </div>
+                            <span class="badge ${badgeClass} rounded-pill px-3 py-2">${order.status.toUpperCase()}</span>
+                        </div>
+                        
+                        <div class="bg-light rounded-3 p-3 mb-3">
+                            ${itemsHtml}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-2">
+                            <span class="fw-semibold text-muted">Total Amount</span>
+                            <h5 class="fw-bold mb-0" style="color: var(--primary);">₦${parseFloat(order.total).toLocaleString()}</h5>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        });
+</script>
+{% endblock %}

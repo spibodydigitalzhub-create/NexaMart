@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="/" class="btn btn-light rounded-circle me-3 p-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h3 class="fw-bold mb-0">Checkout</h3>
+</div>
+
+<div class="modern-card p-4">
+    <div id="loading" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+    
+    <div id="checkout-form" style="display: none;">
+        <!-- Product Summary -->
+        <div class="d-flex align-items-center bg-light rounded-3 p-3 mb-4">
+            <img id="prod-img" src="" class="rounded-3 me-3" style="width: 80px; height: 80px; object-fit: cover;">
+            <div class="flex-grow-1">
+                <h5 class="fw-bold mb-1" id="prod-name"></h5>
+                <small class="text-muted d-block" id="prod-vendor"></small>
+            </div>
+            <h5 class="fw-bold mb-0 text-success" id="prod-price"></h5>
+        </div>
+
+        <!-- Email Input -->
+        <div class="mb-4">
+            <label class="form-label fw-semibold small text-uppercase text-muted">Email Address for Receipt</label>
+            <input type="email" class="form-control form-control-lg" id="email" placeholder="name@example.com" required>
+        </div>
+
+        <!-- Pay Button -->
+        <button class="btn btn-primary w-100 py-3 fw-bold fs-5" onclick="processPayment()">
+            <i class="bi bi-lock-fill me-2"></i> Pay Now
+        </button>
+        
+        <p class="text-center text-muted small mt-3 mb-0">
+            <i class="bi bi-shield-check"></i> Secure payment powered by Paystack
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('product_id');
+
+    if (productId) {
+        fetch(`/api/products/${productId}/`)
+            .then(response => response.json())
+            .then(product => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('checkout-form').style.display = 'block';
+                
+                document.getElementById('prod-img').src = product.image || 'https://via.placeholder.com/80';
+                document.getElementById('prod-name').innerText = product.name;
+                document.getElementById('prod-vendor').innerText = 'Sold by ' + product.vendor_name;
+                document.getElementById('prod-price').innerText = '₦' + parseFloat(product.price).toLocaleString();
+            })
+            .catch(err => {
+                document.getElementById('loading').innerHTML = '<p class="text-danger">Product not found.</p>';
+            });
+    }
+
+    function processPayment() {
+        const email = document.getElementById('email').value;
+        if (!email) {
+            alert('Please enter your email address.');
+            return;
+        }
+
+        const btn = document.querySelector('button[onclick="processPayment()"]');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+        btn.disabled = true;
+
+        fetch('/api/checkout/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+            body: JSON.stringify({ product_id: productId, email: email, quantity: 1 })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.authorization_url) {
+                window.location.href = data.authorization_url;
+            } else {
+                alert('Error: ' + (data.error || 'Payment failed'));
+                btn.innerHTML = '<i class="bi bi-lock-fill me-2"></i> Pay Now';
+                btn.disabled = false;
+            }
+        })
+        .catch(err => {
+            alert('Network error');
+            btn.innerHTML = '<i class="bi bi-lock-fill me-2"></i> Pay Now';
+            btn.disabled = false;
+        });
+    }
+</script>
+{% endblock %}

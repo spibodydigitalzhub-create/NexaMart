@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <h2 class="fw-bold" style="color: var(--primary);">Sell on NexaMart</h2>
+    <p class="text-muted">Open your store and reach thousands of customers.</p>
+</div>
+
+<div class="modern-card p-4">
+    <h6 class="fw-bold mb-3 text-uppercase text-muted" style="font-size: 0.8rem;">Store Details</h6>
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Store Name</label>
+        <input type="text" class="form-control" id="store_name" placeholder="e.g. Spibody Electronics">
+    </div>
+    <div class="mb-4">
+        <label class="form-label fw-semibold">Store Description</label>
+        <textarea class="form-control" id="store_desc" rows="2" placeholder="What do you sell?"></textarea>
+    </div>
+
+    <hr class="my-4">
+
+    <h6 class="fw-bold mb-3 text-uppercase text-muted" style="font-size: 0.8rem;">Account Details</h6>
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Username</label>
+        <input type="text" class="form-control" id="username">
+    </div>
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Email</label>
+        <input type="email" class="form-control" id="email">
+    </div>
+    <div class="mb-4">
+        <label class="form-label fw-semibold">Password</label>
+        <input type="password" class="form-control" id="password">
+    </div>
+
+    <div id="msg-box" class="mb-3" style="display: none;"></div>
+
+    <button class="btn btn-primary w-100 py-3 fw-bold fs-5" onclick="applyAsVendor()">
+        <i class="bi bi-shop-window me-2"></i> Submit Application
+    </button>
+    
+    <p class="text-center mt-4 mb-0 text-muted">
+        Already have an account? <a href="/login/" class="fw-bold" style="color: var(--primary); text-decoration: none;">Login here</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    function applyAsVendor() {
+        const store_name = document.getElementById('store_name').value;
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const msgBox = document.getElementById('msg-box');
+        const btn = document.querySelector('button[onclick="applyAsVendor()"]');
+
+        if (!store_name || !username || !password) {
+            msgBox.className = 'alert alert-danger py-2';
+            msgBox.style.borderRadius = '12px';
+            msgBox.innerText = 'Please fill in all required fields.';
+            msgBox.style.display = 'block';
+            return;
+        }
+
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
+        btn.disabled = true;
+        msgBox.style.display = 'none';
+
+        fetch('/api/register/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+            body: JSON.stringify({ username: username, email: email, password: password, role: 'vendor', store_name: store_name })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                msgBox.className = 'alert alert-success py-2';
+                msgBox.style.borderRadius = '12px';
+                msgBox.innerText = 'Application successful! Please wait for Admin approval.';
+                msgBox.style.display = 'block';
+                btn.innerHTML = 'Application Sent!';
+                setTimeout(() => { window.location.href = '/login/'; }, 3000);
+            } else {
+                let errText = ''; for (let key in data) { errText += `${key}: ${data[key]} `; }
+                msgBox.className = 'alert alert-danger py-2';
+                msgBox.style.borderRadius = '12px';
+                msgBox.innerText = errText || 'Application failed';
+                msgBox.style.display = 'block';
+                btn.innerHTML = '<i class="bi bi-shop-window me-2"></i> Submit Application';
+                btn.disabled = false;
+            }
+        })
+        .catch(err => {
+            msgBox.className = 'alert alert-danger py-2';
+            msgBox.style.borderRadius = '12px';
+            msgBox.innerText = 'Network error';
+            msgBox.style.display = 'block';
+            btn.innerHTML = '<i class="bi bi-shop-window me-2"></i> Submit Application';
+            btn.disabled = false;
+        });
+    }
+</script>
+{% endblock %}

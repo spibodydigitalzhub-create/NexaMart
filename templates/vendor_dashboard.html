@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0">Store Dashboard</h3>
+    <a href="/" class="btn btn-light rounded-circle p-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-shop"></i>
+    </a>
+</div>
+
+<!-- Analytics Cards -->
+<div class="row g-3 mb-4" id="stats-container">
+    <div class="col-4">
+        <div class="modern-card p-3 text-center h-100">
+            <i class="bi bi-cash-coin text-success fs-3 mb-1"></i>
+            <h6 class="text-muted mb-1" style="font-size: 0.75rem;">Revenue</h6>
+            <h5 class="fw-bold mb-0 text-success" id="stat-revenue">₦0</h5>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="modern-card p-3 text-center h-100">
+            <i class="bi bi-bag-check text-primary fs-3 mb-1"></i>
+            <h6 class="text-muted mb-1" style="font-size: 0.75rem;">Orders</h6>
+            <h5 class="fw-bold mb-0 text-primary" id="stat-orders">0</h5>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="modern-card p-3 text-center h-100">
+            <i class="bi bi-box-seam text-warning fs-3 mb-1"></i>
+            <h6 class="text-muted mb-1" style="font-size: 0.75rem;">Products</h6>
+            <h5 class="fw-bold mb-0 text-warning" id="stat-products">0</h5>
+        </div>
+    </div>
+</div>
+
+<!-- Add Product Form -->
+<div class="modern-card p-4 mb-4">
+    <h5 class="fw-bold mb-3"><i class="bi bi-plus-circle text-primary"></i> Add New Product</h5>
+    <div class="mb-3">
+        <label class="form-label fw-semibold small">Product Name</label>
+        <input type="text" class="form-control" id="p-name" placeholder="e.g. Wireless Earbuds">
+    </div>
+    <div class="row g-3 mb-3">
+        <div class="col-6">
+            <label class="form-label fw-semibold small">Price (₦)</label>
+            <input type="number" class="form-control" id="p-price" placeholder="0.00">
+        </div>
+        <div class="col-6">
+            <label class="form-label fw-semibold small">Stock</label>
+            <input type="number" class="form-control" id="p-stock" placeholder="0">
+        </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label fw-semibold small">Description</label>
+        <textarea class="form-control" id="p-desc" rows="2" placeholder="Describe your product..."></textarea>
+    </div>
+    <div class="mb-4">
+        <label class="form-label fw-semibold small">Product Image</label>
+        <input type="file" class="form-control" id="p-image" accept="image/*">
+    </div>
+    
+    <div id="add-msg" class="mb-3" style="display: none;"></div>
+    
+    <button class="btn btn-primary w-100 py-3 fw-bold" onclick="addProduct()">
+        <i class="bi bi-upload"></i> Upload Product
+    </button>
+</div>
+
+<!-- My Products List -->
+<div class="modern-card p-4">
+    <h5 class="fw-bold mb-3"><i class="bi bi-box-seam text-primary"></i> My Inventory</h5>
+    <div id="inventory-list">
+        <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // Load Stats
+    fetch('/api/vendor/stats/')
+        .then(res => res.json())
+        .then(stats => {
+            document.getElementById('stat-revenue').innerText = '₦' + parseFloat(stats.total_revenue).toLocaleString();
+            document.getElementById('stat-orders').innerText = stats.total_orders;
+            document.getElementById('stat-products').innerText = stats.total_products;
+        });
+
+    // Load Inventory
+    fetch('/api/vendor/my-products/')
+        .then(res => res.json())
+        .then(products => {
+            const container = document.getElementById('inventory-list');
+            container.innerHTML = '';
+            if (products.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center py-3">No products yet. Add one above!</p>';
+                return;
+            }
+            products.forEach(p => {
+                const html = `
+                    <div class="d-flex align-items-center py-3 border-bottom">
+                        <img src="${p.image || 'https://via.placeholder.com/60'}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 12px;" class="me-3">
+                        <div class="flex-grow-1">
+                            <h6 class="fw-bold mb-0">${p.name}</h6>
+                            <small class="text-muted">Stock: ${p.stock} | Price: ₦${parseFloat(p.price).toLocaleString()}</small>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        });
+
+    // Add Product
+    function addProduct() {
+        const name = document.getElementById('p-name').value;
+        const price = document.getElementById('p-price').value;
+        const stock = document.getElementById('p-stock').value;
+        const desc = document.getElementById('p-desc').value;
+        const image = document.getElementById('p-image').files[0];
+        const msg = document.getElementById('add-msg');
+        const btn = document.querySelector('button[onclick="addProduct()"]');
+
+        if (!name || !price || !stock) {
+            msg.className = 'alert alert-danger py-2';
+            msg.style.borderRadius = '12px';
+            msg.innerText = 'Please fill in Name, Price, and Stock.';
+            msg.style.display = 'block';
+            return;
+        }
+
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Uploading...';
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('price', price);
+        formData.append('stock', stock);
+        formData.append('description', desc);
+        if (image) formData.append('image', image);
+
+        fetch('/api/vendor/add-product/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.product_id) {
+                msg.className = 'alert alert-success py-2';
+                msg.style.borderRadius = '12px';
+                msg.innerText = 'Product added successfully!';
+                msg.style.display = 'block';
+                document.getElementById('p-name').value = '';
+                document.getElementById('p-price').value = '';
+                document.getElementById('p-stock').value = '';
+                document.getElementById('p-desc').value = '';
+                document.getElementById('p-image').value = '';
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                msg.className = 'alert alert-danger py-2';
+                msg.style.borderRadius = '12px';
+                msg.innerText = 'Error: ' + JSON.stringify(data);
+                msg.style.display = 'block';
+                btn.innerHTML = '<i class="bi bi-upload"></i> Upload Product';
+                btn.disabled = false;
+            }
+        })
+        .catch(err => {
+            msg.className = 'alert alert-danger py-2';
+            msg.style.borderRadius = '12px';
+            msg.innerText = 'Network error';
+            msg.style.display = 'block';
+            btn.innerHTML = '<i class="bi bi-upload"></i> Upload Product';
+            btn.disabled = false;
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="/vendor/dashboard/" class="btn btn-light rounded-circle me-3 p-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h3 class="fw-bold mb-0">Incoming Orders</h3>
+</div>
+
+<div id="vendor-orders-list">
+    <div class="text-center mt-5"><div class="spinner-border text-primary"></div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    fetch('/api/vendor/orders/')
+        .then(res => res.json())
+        .then(orders => {
+            const container = document.getElementById('vendor-orders-list');
+            container.innerHTML = '';
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center mt-5">
+                        <i class="bi bi-truck text-muted" style="font-size: 4rem;"></i>
+                        <p class="text-muted mt-3">No orders yet.</p>
+                    </div>`;
+                return;
+            }
+            orders.forEach(order => {
+                // Determine badge color
+                let badgeClass = 'bg-secondary bg-opacity-10 text-secondary';
+                if (order.status === 'paid') badgeClass = 'bg-warning bg-opacity-10 text-warning';
+                if (order.status === 'shipped') badgeClass = 'bg-primary bg-opacity-10 text-primary';
+                if (order.status === 'delivered') badgeClass = 'bg-success bg-opacity-10 text-success';
+
+                const isShipped = order.status === 'shipped' || order.status === 'delivered';
+                const btnClass = isShipped ? 'btn-light text-muted' : 'btn-primary';
+                const btnText = isShipped ? 'Completed' : 'Mark as Shipped';
+                const disabled = isShipped ? 'disabled' : '';
+
+                const html = `
+                    <div class="modern-card p-4 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold mb-0">Order #${order.order_id}</h6>
+                                <small class="text-muted">${order.date}</small>
+                            </div>
+                            <span class="badge ${badgeClass} rounded-pill px-3 py-2">${order.status.toUpperCase()}</span>
+                        </div>
+                        
+                        <div class="bg-light rounded-3 p-3 mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="small text-muted">Customer</span>
+                                <span class="small fw-bold">${order.customer}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="small text-muted">Product</span>
+                                <span class="small fw-bold">${order.quantity}x ${order.product}</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="small text-muted">Total</span>
+                                <span class="small fw-bold">₦${parseFloat(order.total).toLocaleString()}</span>
+                            </div>
+                        </div>
+                        
+                        <button class="btn ${btnClass} btn-sm w-100 py-2 fw-bold" ${disabled} onclick="markShipped(${order.order_id}, this)">
+                            ${btnText}
+                        </button>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        });
+
+    function markShipped(orderId, btn) {
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Updating...';
+        fetch('/api/vendor/update-order/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+            body: JSON.stringify({ order_id: orderId, status: 'shipped' })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.message) {
+                btn.className = 'btn btn-light text-muted btn-sm w-100 py-2 fw-bold';
+                btn.innerText = 'Completed';
+                btn.disabled = true;
+            } else {
+                alert(data.error);
+                btn.innerText = 'Mark as Shipped';
+            }
+        });
+    }
+</script>
+{% endblock %}

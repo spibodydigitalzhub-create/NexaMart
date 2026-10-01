@@ -1,0 +1,11 @@
+Django>=4.2
+djangorestframework
+Pillow
+requests
+gunicorn
+whitenoise
+psycopg2-binary
+dj-database-url
+python-dotenv
+cloudinary
+django-cloudinary-storage

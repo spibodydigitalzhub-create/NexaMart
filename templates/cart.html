@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3 class="fw-bold mb-4">Your Cart</h3>
+<div id="cart-items-container">
+    <div class="text-center mt-5"><div class="spinner-border text-primary"></div></div>
+</div>
+
+<div class="modern-card p-4 mt-4" id="cart-summary" style="display: none;">
+    <div class="d-flex justify-content-between mb-3">
+        <h5 class="fw-bold mb-0">Total Amount</h5>
+        <h4 class="fw-bold mb-0" style="color: var(--success);" id="cart-total">₦0</h4>
+    </div>
+    <div class="mb-4">
+        <label class="form-label fw-semibold">Email for Receipt</label>
+        <input type="email" class="form-control" id="checkout-email" placeholder="Enter your email">
+    </div>
+    <button class="btn btn-primary w-100 py-3 fw-bold" onclick="proceedToCheckout()">
+        Proceed to Checkout <i class="bi bi-arrow-right ms-2"></i>
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function renderCart() {
+        let cart = JSON.parse(localStorage.getItem('nexamart_cart') || '[]');
+        const container = document.getElementById('cart-items-container');
+        const summary = document.getElementById('cart-summary');
+        container.innerHTML = '';
+        
+        if (cart.length === 0) {
+            container.innerHTML = '<div class="text-center mt-5"><i class="bi bi-cart-x text-muted" style="font-size: 4rem;"></i><p class="text-muted mt-3">Your cart is empty.</p><a href="/" class="btn btn-primary mt-2">Start Shopping</a></div>';
+            summary.style.display = 'none';
+            return;
+        }
+
+        summary.style.display = 'block';
+        let total = 0;
+
+        cart.forEach((item, index) => {
+            let itemTotal = item.price * item.quantity;
+            total += itemTotal;
+            const html = `
+                <div class="modern-card p-3 mb-3 d-flex align-items-center">
+                    <img src="${item.image || 'https://via.placeholder.com/80'}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 12px;" class="me-3">
+                    <div class="flex-grow-1">
+                        <h6 class="fw-bold mb-1 text-truncate" style="max-width: 150px;">${item.name}</h6>
+                        <p class="fw-bold mb-0" style="color: var(--text-main);">₦${parseFloat(item.price).toLocaleString()}</p>
+                    </div>
+                    <div class="d-flex flex-column align-items-end">
+                        <div class="d-flex align-items-center bg-light rounded-pill p-1 mb-2">
+                            <button class="btn btn-sm btn-link text-dark p-0 px-2" onclick="updateQty(${index}, -1)">-</button>
+                            <span class="fw-bold px-2">${item.quantity}</span>
+                            <button class="btn btn-sm btn-link text-dark p-0 px-2" onclick="updateQty(${index}, 1)">+</button>
+                        </div>
+                        <button class="btn btn-link text-danger p-0" onclick="removeItem(${index})"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += html;
+        });
+
+        document.getElementById('cart-total').innerText = '₦' + total.toLocaleString();
+        updateCartBadge();
+    }
+
+    function updateQty(index, change) {
+        let cart = JSON.parse(localStorage.getItem('nexamart_cart') || '[]');
+        cart[index].quantity += change;
+        if (cart[index].quantity <= 0) cart.splice(index, 1);
+        localStorage.setItem('nexamart_cart', JSON.stringify(cart));
+        renderCart();
+    }
+
+    function removeItem(index) {
+        let cart = JSON.parse(localStorage.getItem('nexamart_cart') || '[]');
+        cart.splice(index, 1);
+        localStorage.setItem('nexamart_cart', JSON.stringify(cart));
+        renderCart();
+    }
+
+    function proceedToCheckout() {
+        const email = document.getElementById('checkout-email').value;
+        if (!email) { alert('Please enter your email address.'); return; }
+        
+        let cart = JSON.parse(localStorage.getItem('nexamart_cart') || '[]');
+        const itemsPayload = cart.map(item => ({ product_id: item.id, quantity: item.quantity }));
+
+        fetch('/api/checkout/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ items: itemsPayload, email: email })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.authorization_url) {
+                localStorage.removeItem('nexamart_cart');
+                window.location.href = data.authorization_url;
+            } else {
+                alert('Error: ' + (data.error || 'Checkout failed'));
+            }
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    renderCart();
+</script>
+{% endblock %}

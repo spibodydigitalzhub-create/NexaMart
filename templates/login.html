@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6 col-12">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold" style="color: var(--primary);">Welcome Back</h2>
+            <p class="text-muted">Sign in to continue to NexaMart</p>
+        </div>
+        
+        <div class="modern-card p-4">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Username</label>
+                <input type="text" class="form-control" id="username" placeholder="Enter your username">
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Password</label>
+                <input type="password" class="form-control" id="password" placeholder="Enter your password">
+            </div>
+
+            <div id="error-msg" class="alert alert-danger py-2" style="display: none; border-radius: 12px;"></div>
+
+            <button class="btn btn-primary w-100 py-3 fw-bold" onclick="doLogin()">Sign In</button>
+            
+            <p class="text-center mt-4 mb-0 text-muted">
+                Don't have an account? <a href="/register/" class="fw-bold" style="color: var(--primary); text-decoration: none;">Create one</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    function doLogin() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const errorMsg = document.getElementById('error-msg');
+        const btn = document.querySelector('button[onclick="doLogin()"]');
+
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Signing in...';
+        btn.disabled = true;
+        errorMsg.style.display = 'none';
+
+        fetch('/api/login/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+            body: JSON.stringify({ username: username, password: password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                window.location.href = '/'; 
+            } else {
+                errorMsg.innerText = data.error || 'Invalid credentials';
+                errorMsg.style.display = 'block';
+                btn.innerHTML = 'Sign In';
+                btn.disabled = false;
+            }
+        })
+        .catch(err => {
+            errorMsg.innerText = 'Network error';
+            errorMsg.style.display = 'block';
+            btn.innerHTML = 'Sign In';
+            btn.disabled = false;
+        });
+    }
+</script>
+{% endblock %}

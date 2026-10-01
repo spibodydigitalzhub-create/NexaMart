@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3><i class="bi bi-graph-up-arrow text-primary"></i> Platform Analytics</h3>
+    <a href="/admin/" class="btn btn-outline-dark btn-sm">Go to Django Admin</a>
+</div>
+
+<!-- Analytics Cards -->
+<div class="row mb-4" id="stats-container">
+    <div class="col-6 col-md-3 mb-3">
+        <div class="card text-center p-3 shadow-sm border-success h-100">
+            <i class="bi bi-cash-coin text-success fs-1 mb-2"></i>
+            <h6 class="text-muted mb-1">Your Revenue</h6>
+            <h3 class="text-success mb-0" id="stat-revenue">₦0</h3>
+            <small class="text-muted">Platform Fees (5%)</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 mb-3">
+        <div class="card text-center p-3 shadow-sm border-primary h-100">
+            <i class="bi bi-shop text-primary fs-1 mb-2"></i>
+            <h6 class="text-muted mb-1">Active Vendors</h6>
+            <h3 class="text-primary mb-0" id="stat-vendors">0</h3>
+            <small class="text-muted">Approved Stores</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 mb-3">
+        <div class="card text-center p-3 shadow-sm border-info h-100">
+            <i class="bi bi-people text-info fs-1 mb-2"></i>
+            <h6 class="text-muted mb-1">Customers</h6>
+            <h3 class="text-info mb-0" id="stat-customers">0</h3>
+            <small class="text-muted">Registered Buyers</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3 mb-3">
+        <div class="card text-center p-3 shadow-sm border-warning h-100">
+            <i class="bi bi-bag-check text-warning fs-1 mb-2"></i>
+            <h6 class="text-muted mb-1">Total Orders</h6>
+            <h3 class="text-warning mb-0" id="stat-orders">0</h3>
+            <small class="text-muted">All Time</small>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity Placeholder -->
+<div class="card shadow-sm">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Platform Health</h5>
+    </div>
+    <div class="card-body text-center py-5">
+        <p class="text-muted">NexaMart is running smoothly. All systems operational.</p>
+        <a href="/vendor/orders/" class="btn btn-primary">Manage Vendor Orders</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Load Admin Stats
+    fetch('/api/admin/stats/')
+        .then(res => {
+            if (res.status === 403) {
+                window.location.href = '/login/'; // Redirect if not admin
+                throw new Error('Unauthorized');
+            }
+            return res.json();
+        })
+        .then(stats => {
+            document.getElementById('stat-revenue').innerText = '₦' + parseFloat(stats.total_revenue).toLocaleString();
+            document.getElementById('stat-vendors').innerText = stats.total_vendors;
+            document.getElementById('stat-customers').innerText = stats.total_customers;
+            document.getElementById('stat-orders').innerText = stats.total_orders;
+        })
+        .catch(err => {
+            console.log("Waiting for auth or redirecting...");
+        });
+</script>
+{% endblock %}
