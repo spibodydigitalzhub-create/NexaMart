@@ -4,233 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NexaMart</title>
-    
-    <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#4f46e5">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="NexaMart">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="icon" type="image/jpeg" href="https://i.imgur.com/pPQgPzH.jpeg">
     <link rel="apple-touch-icon" href="https://i.imgur.com/pPQgPzH.jpeg">
-    
-    <!-- Modern Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Bootstrap & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-dark: #4338ca;
-            --bg-color: #f9fafb;
-            --surface: #ffffff;
-            --text-main: #111827;
-            --text-muted: #6b7280;
-            --success: #10b981;
-            --border-radius: 16px;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-
-        body {
-            background-color: var(--bg-color);
-            font-family: 'Inter', sans-serif;
-            color: var(--text-main);
-            padding-bottom: 100px;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        :root { --primary: #4f46e5; --primary-dark: #4338ca; --bg-color: #f9fafb; --surface: #ffffff; --text-main: #111827; --text-muted: #6b7280; --success: #10b981; --border-radius: 16px; }
+        body { background-color: var(--bg-color); font-family: 'Inter', sans-serif; color: var(--text-main); padding-bottom: 100px; }
         h1, h2, h3, h4, h5, h6, .navbar-brand { font-family: 'Poppins', sans-serif; }
 
-        /* Install Banner */
+        /* Bulletproof Install Banner */
         .install-banner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: 15px 20px;
-            z-index: 10000;
-            display: none;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-            animation: slideDown 0.3s ease-out;
+            position: fixed; top: 0; left: 0; right: 0;
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+            color: white; padding: 15px 20px; z-index: 99999;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex; justify-content: space-between; align-items: center;
+            animation: slideDown 0.5s ease-out;
         }
-        
-        @keyframes slideDown {
-            from { transform: translateY(-100%); }
-            to { transform: translateY(0); }
-        }
-        
-        .install-banner.show {
-            display: block;
-        }
-        
-        .install-banner-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-        }
-        
-        .install-banner-text {
-            flex: 1;
-        }
-        
-        .install-banner h5 {
-            margin: 0 0 5px 0;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-        
-        .install-banner p {
-            margin: 0;
-            font-size: 0.85rem;
-            opacity: 0.9;
-        }
-        
-        .install-banner .btn-close {
-            background: transparent;
-            border: none;
-            font-size: 1.5rem;
-            opacity: 0.8;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .install-banner .btn-close:hover {
-            opacity: 1;
-        }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+        .banner-text h6 { margin: 0; font-weight: 700; font-size: 1rem; }
+        .banner-text p { margin: 0; font-size: 0.8rem; opacity: 0.9; }
+        .banner-btns { display: flex; gap: 10px; }
+        .btn-install { background: white; color: #4f46e5; border: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; }
+        .btn-close-banner { background: transparent; border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 12px; border-radius: 20px; font-size: 0.9rem; }
 
-        .top-header {
-            background: var(--surface);
-            padding: 15px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: var(--shadow-sm);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .brand-logo { 
-            color: var(--primary); 
-            font-weight: 700; 
-            font-size: 1.4rem; 
-            text-decoration: none; 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-        }
-        .brand-logo img {
-            height: 40px;
-            width: auto;
-            object-fit: contain;
-        }
-        .brand-logo span {
-            font-family: 'Poppins', sans-serif;
-            font-weight: 700;
-            font-size: 1.3rem;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .header-icon { color: var(--text-main); font-size: 1.3rem; text-decoration: none; position: relative; }
-
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: var(--surface); border-top: 1px solid #f3f4f6;
-            display: flex; justify-content: space-around; padding: 10px 0 15px 0;
-            z-index: 1000; box-shadow: 0 -4px 10px rgba(0,0,0,0.03);
-        }
-        .nav-item-custom {
-            text-decoration: none; color: var(--text-muted);
-            display: flex; flex-direction: column; align-items: center;
-            font-size: 0.75rem; font-weight: 500; transition: all 0.2s;
-        }
+        .top-header { background: var(--surface); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .brand-logo { color: var(--primary); font-weight: 700; font-size: 1.4rem; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+        .brand-logo img { height: 40px; width: auto; }
+        .brand-logo span { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-icon { color: var(--text-main); font-size: 1.3rem; text-decoration: none; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid #f3f4f6; display: flex; justify-content: space-around; padding: 10px 0 15px 0; z-index: 1000; }
+        .nav-item-custom { text-decoration: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; font-weight: 500; }
         .nav-item-custom i { font-size: 1.4rem; margin-bottom: 4px; }
-        .nav-item-custom.active, .nav-item-custom:hover { color: var(--primary); }
-
-        .modern-card {
-            background: var(--surface); border: none; border-radius: var(--border-radius);
-            box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; overflow: hidden;
-        }
-        .modern-card:active { transform: scale(0.98); }
-        .btn-primary { background-color: var(--primary); border: none; border-radius: 12px; font-weight: 600; padding: 10px 20px; }
-        .btn-primary:hover { background-color: var(--primary-dark); }
-        .btn-success { background-color: var(--success); border: none; border-radius: 12px; font-weight: 600; }
-        .form-control, .form-select { border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; background-color: #f9fafb; }
-        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); background-color: #fff; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        .premium-footer {
-            background-color: #111827;
-            border-top-left-radius: 24px;
-            border-top-right-radius: 24px;
-            margin-top: 60px;
-            padding: 40px 20px 20px 20px;
-        }
+        .nav-item-custom.active { color: var(--primary); }
+        .modern-card { background: var(--surface); border: none; border-radius: var(--border-radius); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .btn-primary { background-color: var(--primary); border: none; border-radius: 12px; font-weight: 600; }
+        .premium-footer { background-color: #111827; border-top-left-radius: 24px; border-top-right-radius: 24px; margin-top: 60px; padding: 40px 20px 20px 20px; }
         .premium-footer a:hover { color: #fff !important; }
-        .premium-footer .footer-logo img {
-            height: 50px;
-            width: auto;
-            object-fit: contain;
-        }
     </style>
 </head>
 <body>
 
-    <!-- Install Banner -->
-    <div class="install-banner" id="installBanner">
-        <div class="install-banner-content">
-            <div class="install-banner-text">
-                <h5><i class="bi bi-download me-2"></i>Install NexaMart App</h5>
-                <p>Get the best shopping experience on your phone!</p>
-            </div>
-            <div class="d-flex gap-2">
-                <button class="btn btn-light btn-sm rounded-pill px-3" onclick="closeBanner()">Later</button>
-                <button class="btn btn-success btn-sm rounded-pill px-3" onclick="installApp()">Install</button>
-            </div>
+    <!-- Forced Install Banner -->
+    <div class="install-banner" id="installBanner" style="display: none;">
+        <div class="banner-text">
+            <h6><i class="bi bi-phone-fill me-2"></i>Download NexaMart App</h6>
+            <p>Install for the best experience!</p>
+        </div>
+        <div class="banner-btns">
+            <button class="btn-close-banner" onclick="hideBanner()">✕</button>
+            <button class="btn-install" onclick="triggerInstall()">Install</button>
         </div>
     </div>
 
     <!-- Top Header -->
     <div class="top-header">
-        <a href="/" class="brand-logo">
-            <img src="https://i.imgur.com/pPQgPzH.jpeg" alt="NexaMart">
-            <span>NexaMart</span>
-        </a>
+        <a href="/" class="brand-logo"><img src="https://i.imgur.com/pPQgPzH.jpeg" alt="NexaMart"><span>NexaMart</span></a>
         <div class="d-flex gap-3">
             <a href="/my-orders/" class="header-icon"><i class="bi bi-bell"></i></a>
             <a href="/login/" class="header-icon"><i class="bi bi-person-circle"></i></a>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="container mt-4">
-        {% block content %}
-        {% endblock %}
-    </div>
+    <div class="container mt-4">{% block content %}{% endblock %}</div>
 
-    <!-- Premium Footer -->
     <footer class="premium-footer">
         <div class="row g-4">
             <div class="col-12 text-center">
-                <div class="footer-logo mb-2">
-                    <img src="https://i.imgur.com/pPQgPzH.jpeg" alt="NexaMart" style="filter: brightness(0) invert(1);">
-                </div>
+                <img src="https://i.imgur.com/pPQgPzH.jpeg" alt="NexaMart" style="height: 50px; filter: brightness(0) invert(1); margin-bottom: 10px;">
                 <p class="text-secondary small mb-0">The ultimate marketplace for buyers and sellers in Ghana.</p>
             </div>
             <div class="col-6">
@@ -244,108 +90,56 @@
                 <h6 class="text-white fw-semibold mb-3">Support</h6>
                 <ul class="list-unstyled small">
                     <li class="mb-2"><a href="#" class="text-secondary text-decoration-none">Help Center</a></li>
-                    <li class="mb-2">
-                        <a href="https://wa.me/233257210750" class="text-secondary text-decoration-none d-flex align-items-center gap-2">
-                            <i class="bi bi-whatsapp text-success" style="font-size: 1.1rem;"></i> Chat on WhatsApp
-                        </a>
-                    </li>
+                    <li class="mb-2"><a href="https://wa.me/233257210750" class="text-secondary text-decoration-none d-flex align-items-center gap-2"><i class="bi bi-whatsapp text-success"></i> Chat on WhatsApp</a></li>
                 </ul>
             </div>
         </div>
         <hr class="border-secondary my-4 opacity-25">
-        <div class="text-center">
-            <p class="text-secondary small mb-0">&copy; 2026 NexaMart. All rights reserved.</p>
-        </div>
+        <div class="text-center"><p class="text-secondary small mb-0">&copy; 2026 NexaMart. All rights reserved.</p></div>
     </footer>
 
-    <!-- Bottom Navigation -->
     <div class="bottom-nav">
         <a href="/" class="nav-item-custom active"><i class="bi bi-house-door"></i> Home</a>
         <a href="/become-a-vendor/" class="nav-item-custom"><i class="bi bi-shop"></i> Sell</a>
-        <a href="/cart/" class="nav-item-custom position-relative">
-            <i class="bi bi-cart3"></i> Cart
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cart-count" style="font-size: 0.6rem;">0</span>
-        </a>
+        <a href="/cart/" class="nav-item-custom position-relative"><i class="bi bi-cart3"></i> Cart<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cart-count" style="font-size: 0.6rem;">0</span></a>
         <a href="/login/" class="nav-item-custom"><i class="bi bi-person"></i> Account</a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Cart Badge Logic
+        // Cart Logic
         function updateCartBadge() {
             let cart = JSON.parse(localStorage.getItem('nexamart_cart') || '[]');
-            let count = cart.reduce((sum, item) => sum + item.quantity, 0);
-            document.getElementById('cart-count').innerText = count;
+            document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
         }
         updateCartBadge();
 
-        // PWA Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/static/service-worker.js')
-                    .then(registration => console.log('SW registered:', registration))
-                    .catch(error => console.log('SW registration failed:', error));
-            });
-        }
-
-        // PWA Install Banner Logic
+        // PWA Logic
         let deferredPrompt;
-        const installBanner = document.getElementById('installBanner');
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/static/service-worker.js'); }
 
-        // Check if user has already dismissed the banner
-        const hasDismissedBanner = localStorage.getItem('nexamart_banner_dismissed');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            // Show banner if not dismissed
-            if (!hasDismissedBanner) {
-                setTimeout(() => {
-                    installBanner.classList.add('show');
-                }, 2000); // Show after 2 seconds
-            }
-        });
-
-        // Also show on page load for iOS (which doesn't fire beforeinstallprompt)
-        window.addEventListener('load', () => {
-            if (!hasDismissedBanner && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                setTimeout(() => {
-                    installBanner.classList.add('show');
-                }, 2000);
-            }
-        });
-
-        function closeBanner() {
-            installBanner.classList.remove('show');
-            localStorage.setItem('nexamart_banner_dismissed', 'true');
+        // BANNER LOGIC: Show banner if user hasn't closed it in this session
+        const banner = document.getElementById('installBanner');
+        if (!sessionStorage.getItem('banner_closed')) {
+            setTimeout(() => { banner.style.display = 'flex'; }, 1500); // Shows after 1.5 seconds
         }
 
-        function installApp() {
+        function hideBanner() {
+            banner.style.display = 'none';
+            sessionStorage.setItem('banner_closed', 'true'); // Won't show again until browser is closed and reopened
+        }
+
+        function triggerInstall() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        closeBanner();
-                    }
-                    deferredPrompt = null;
-                });
+                deferredPrompt.userChoice.then(() => { hideBanner(); deferredPrompt = null; });
             } else {
-                // For iOS, show instructions
-                alert('To install NexaMart:\n\n1. Tap the Share button in Safari\n2. Select "Add to Home Screen"\n3. Tap "Add"');
-                closeBanner();
-            }
-        }
-
-        // Reset banner after 7 days
-        if (hasDismissedBanner) {
-            const dismissTime = localStorage.getItem('nexamart_banner_dismiss_time');
-            if (dismissTime && (Date.now() - parseInt(dismissTime)) > (7 * 24 * 60 * 60 * 1000)) {
-                localStorage.removeItem('nexamart_banner_dismissed');
-                localStorage.removeItem('nexamart_banner_dismiss_time');
+                alert('To install: Tap the Share/Menu button in your browser and select "Add to Home Screen" or "Install App".');
+                hideBanner();
             }
         }
     </script>
-    {% block scripts %}
-    {% endblock %}
+    {% block scripts %}{% endblock %}
 </body>
 </html>
